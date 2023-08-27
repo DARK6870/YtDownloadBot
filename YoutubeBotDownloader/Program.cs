@@ -1,6 +1,7 @@
 ﻿using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;
+using YoutubeBotDownloader;
 using YoutubeExplode;
 
 internal class Program
@@ -97,44 +98,14 @@ internal class Program
         {
             Console.WriteLine($"Error while processing update: {ex}");
         }
+    }
 
-
-    async Task<String> DownloadVideo(string videoUrl)
+    async static Task<string> DownloadVideo(string videoUrl)
     {
-        var youtube = new YoutubeClient();
-        var video = await youtube.Videos.GetAsync(videoUrl);
-
-        string sanitizedTitle = string.Join("_", video.Title.Split(Path.GetInvalidFileNameChars()));
-
-
-        var streamManifest = await youtube.Videos.Streams.GetManifestAsync(video.Id);
-        var muxedStreams = streamManifest.GetMuxedStreams().OrderByDescending(s => s.VideoQuality).ToList();
-
-        if (muxedStreams.Any())
-        {
-            var streamInfo = muxedStreams.First();
-            using var httpClient = new HttpClient();
-            var stream = await httpClient.GetStreamAsync(streamInfo.Url);
-            var datetime = DateTime.Now;
-
-            string outputFilePath = Path.Combine("D:/", $"{sanitizedTitle}.{streamInfo.Container}");
-            using var outputStream = System.IO.File.Create(outputFilePath);
-            await stream.CopyToAsync(outputStream);
-
-            Console.WriteLine("Download completed!");
-            Console.WriteLine($"Video saved as: {outputFilePath}{datetime}");
-            return outputFilePath;
-        }
-        else
-        {
-            Console.WriteLine($"No suitable video stream found for {video.Title}.");
-            return "error";
-        }
+        var videoDownloader = new VideoDownloader();
+        string outputDirectory = "D:/";
+        return await videoDownloader.DownloadVideo(videoUrl, outputDirectory);
     }
-    }
-
-    
-
     private static Task HandleError(ITelegramBotClient botClient, Exception ex, CancellationToken token)
     {
         Console.WriteLine($"Error occurred: {ex}");
